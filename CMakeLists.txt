@@ -13,3 +13,10 @@ file(GLOB SOURCE_FILES
 add_executable(aligator_mpc ${SOURCE_FILES})
 target_link_libraries(aligator_mpc pinocchio::pinocchio)
 target_link_libraries(aligator_mpc aligator::aligator)
+
+
+# Resolve for the package path at compile time.
+configure_file (
+  "${PROJECT_SOURCE_DIR}/include/utils/project_path.h.in"
+  "${PROJECT_SOURCE_DIR}/include/utils/project_path.h" @ONLY
+)
