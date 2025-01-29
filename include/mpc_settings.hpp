@@ -23,6 +23,7 @@ namespace ci_mpc
         size_t max_iters = 1;
         size_t num_threads = 4;
         size_t first_iters = 100;
+        double finite_diff_step = 1e-6;
     };
 
 } // namespace ci_mpc

@@ -26,8 +26,6 @@ namespace ci_mpc
             // load yaml parameters
             std::vector<double> q_init_vec = config["q_init"].as<std::vector<double>>();
             std::vector<double> v_init_vec = config["v_init"].as<std::vector<double>>();
-            std::vector<double> q_ref_start_vec = config["q_ref_start"].as<std::vector<double>>();
-            std::vector<double> q_ref_end_vec = config["q_ref_end"].as<std::vector<double>>();
             std::vector<double> w_q_vec = config["w_q"].as<std::vector<double>>();
             std::vector<double> w_v_vec = config["w_v"].as<std::vector<double>>();
             std::vector<double> w_u_vec = config["w_u"].as<std::vector<double>>();
@@ -47,12 +45,11 @@ namespace ci_mpc
             size_t max_iters = config["max_iters"].as<size_t>();
             size_t num_threads = config["num_threads"].as<size_t>();
             size_t first_iters = config["first_iters"].as<size_t>();
+            double finite_diff_step = config["finite_diff_step"].as<double>();
 
             // convert std::vector to Eigen::VectorXd
             VectorXd q_init = Eigen::Map<VectorXd>(q_init_vec.data(), q_init_vec.size());
             VectorXd v_init = Eigen::Map<VectorXd>(v_init_vec.data(), v_init_vec.size());
-            VectorXd q_ref_start = Eigen::Map<VectorXd>(q_ref_start_vec.data(), q_ref_start_vec.size());
-            VectorXd q_ref_end = Eigen::Map<VectorXd>(q_ref_end_vec.data(), q_ref_end_vec.size());
             VectorXd w_q_diag = Eigen::Map<VectorXd>(w_q_vec.data(), w_q_vec.size());
             VectorXd w_v_diag = Eigen::Map<VectorXd>(w_v_vec.data(), w_v_vec.size());
             VectorXd w_u_diag = Eigen::Map<VectorXd>(w_u_vec.data(), w_u_vec.size());
@@ -74,7 +71,8 @@ namespace ci_mpc
             mpc_settings.w_x = w_x_diag.asDiagonal();
             mpc_settings.w_x_term = w_x_term_diag.asDiagonal();
             mpc_settings.w_u = w_u_diag.asDiagonal();
-
+            mpc_settings.finite_diff_step = finite_diff_step;
+            
             // load contact parameters
             contact_param.contact_stiffness = contact_stiffness;
             contact_param.dissipation_velocity = dissipation_velocity;

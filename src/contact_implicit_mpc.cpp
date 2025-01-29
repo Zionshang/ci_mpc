@@ -68,7 +68,7 @@ namespace ci_mpc
         const auto space = dynamics.space();
 
         IntegratorSemiImplEuler discrete_dyn = IntegratorSemiImplEuler(dynamics, mpc_settings_.timestep);
-        DynamicsFiniteDifference finite_diff_dyn(space, discrete_dyn, mpc_settings_.timestep); // todo: 这里的timestep有待测试
+        DynamicsFiniteDifference finite_diff_dyn(space, discrete_dyn, mpc_settings_.finite_diff_step); // todo: 这里的timestep有待测试
 
         std::vector<xyz::polymorphic<StageModel>> stage_models;
         for (size_t i = 0; i < mpc_settings_.horizon; i++)

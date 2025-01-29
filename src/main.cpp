@@ -25,24 +25,30 @@ int main(int, char **)
 
     std::vector<VectorXd> pos_ref(mpc_settings.horizon, x0.head(nq));
     std::vector<VectorXd> vel_ref(mpc_settings.horizon, x0.tail(nv));
-
+    VectorXd pos_ref_start = x0.head(nq);
     std::vector<VectorXd> x_result;
 
-    double vx = 0.5;
-    vel_ref[0](0) = vx * mpc_settings.timestep;
-
-    for (int t = 0; t < 100; t++)
+    double vx = 0.1;
+    vel_ref[0](0) = vx;
+    for (int t = 0; t < 1; t++)
     {
+        pin::integrate(robot_handler.model(), pos_ref_start, vel_ref[0] * mpc_settings.timestep, pos_ref[0]);
+        pos_ref_start = pos_ref[0];
         for (int i = 1; i < mpc_settings.horizon; i++)
         {
             vel_ref[i] = vel_ref[i - 1];
-            pin::integrate(robot_handler.model(), pos_ref[i - 1], vel_ref[i - 1], pos_ref[i]);
+            pin::integrate(robot_handler.model(), pos_ref[i - 1], vel_ref[i - 1] * mpc_settings.timestep, pos_ref[i]);
+            std::cout << "vel_ref[" << i << "]: " << vel_ref[i].transpose() << std::endl;
+            std::cout << "pos_ref[" << i << "]: " << pos_ref[i].transpose() << std::endl;
         }
         mpc.iterate(x0, pos_ref, vel_ref);
         x0 = mpc.x_sol()[1];
-        std::cout << "t: " << t << std::endl;
-        std::cout << "x0: " << x0.transpose() << std::endl;
-        x_result.push_back(x0);
+        // std::cout << "t: " << t << std::endl;
+        // std::cout << "q_ref0[" << t << "]: " << pos_ref[0].transpose() << std::endl;
+        // std::cout << "q_0   [" << t << "]: " << x0.head(nq).transpose() << std::endl;
+
+        // x_result.push_back(x0);
+        x_result = mpc.x_sol();
     }
 
     std::ofstream outFile("trajectory_results.csv");
