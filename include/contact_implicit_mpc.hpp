@@ -44,8 +44,11 @@ namespace ci_mpc
         void updateStateReferences(const std::vector<VectorXd> &pos_ref,
                                    const std::vector<VectorXd> &vel_ref);
 
-    private:
+        void createTrajOptProblem(const CompliantContactDynamics &dynamics,
+                                            const std::vector<VectorXd> &x_ref,
+                                            const VectorXd &x0, const VectorXd &u0);
 
+    private:
         StageModel createStage(const ConstVectorRef &x_ref);
         CostStack createTerminalCost(const ConstVectorRef &x_ref);
         void creatMpcProblem(const ConstVectorRef &x0, const std::vector<VectorXd> &x_ref);

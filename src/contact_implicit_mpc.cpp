@@ -34,24 +34,56 @@ namespace ci_mpc
         solver_->force_initial_condition_ = true;
 
         // setup initial reference trajectory
-        x_ref_.assign(mpc_settings_.horizon, VectorXd::Zero(nq_ + nv_));
-        for (size_t i = 0; i < mpc_settings_.horizon; i++)
-            x_ref_[i].head(nq_) = x0;
+        x_ref_.assign(mpc_settings_.horizon, x0);
 
         // create mpc problem
-        creatMpcProblem(x0, x_ref_);
+        // creatMpcProblem(x0, x_ref_);
+        const auto &model = robot_handler_.model();
+        const auto &geom_model = robot_handler_.geom_model();
+        MultibodyPhaseSpace space(model);
+        CompliantContactDynamics dynamics(space, actuation_matrix_, geom_model, contact_param_);
+        VectorXd u0 = VectorXd::Zero(nu_);
+        createTrajOptProblem(dynamics, x_ref_, x0, u0);
 
         // solve initial problem
-        x_sol_ = x_ref_;
-        u_sol_.assign(mpc_settings_.horizon, VectorXd::Zero(nu_));
+        x_sol_.assign(mpc_settings_.horizon + 1, x0);
+        u_sol_.assign(mpc_settings_.horizon, u0);
         solver_->setup(*problem_);
         solver_->run(*problem_, x_sol_, u_sol_);
-        x_sol_ = solver_->results_.xs;
-        u_sol_ = solver_->results_.us;
         std::cout << "Initial MPC solved" << std::endl;
-        
-        // set max iterations to mpc settings
-        solver_->max_iters = mpc_settings_.max_iters;
+        fmt::print("Results: {}\n", solver_->results_);
+
+        // // update guess for next iteration
+        // x_sol_ = solver_->results_.xs;
+        // u_sol_ = solver_->results_.us;
+
+        // // set max iterations to mpc settings
+        // solver_->max_iters = mpc_settings_.max_iters;
+    }
+
+    void ContactImplicitMpc::createTrajOptProblem(const CompliantContactDynamics &dynamics,
+                                                  const std::vector<VectorXd> &x_ref,
+                                                  const VectorXd &x0, const VectorXd &u0)
+    {
+        // todo: 现在dynamics只能靠传参进来，如果在这里创建的话，会报错，报错位置是pinocchio计算碰撞体距离的地方，暂时不知道原因
+        const auto space = dynamics.space();
+
+        IntegratorSemiImplEuler discrete_dyn = IntegratorSemiImplEuler(dynamics, mpc_settings_.timestep);
+        DynamicsFiniteDifference finite_diff_dyn(space, discrete_dyn, mpc_settings_.timestep); // todo: 这里的timestep有待测试
+
+        std::vector<xyz::polymorphic<StageModel>> stage_models;
+        for (size_t i = 0; i < mpc_settings_.horizon; i++)
+        {
+            auto rcost = CostStack(space, nu_);
+            rcost.addCost("quad_state", QuadraticStateCost(space, nu_, x_ref[i], mpc_settings_.w_x));
+            rcost.addCost("quad_control", QuadraticControlCost(space, u0, mpc_settings_.w_u));
+
+            StageModel stage(rcost, finite_diff_dyn);
+            stage_models.push_back(std::move(stage));
+        }
+
+        auto term_cost = QuadraticStateCost(space, nu_, x_ref.back(), mpc_settings_.w_x_term);
+        problem_ = std::make_unique<TrajOptProblem>(x0, std::move(stage_models), term_cost);
     }
 
     StageModel ContactImplicitMpc::createStage(const ConstVectorRef &x_ref)
@@ -60,7 +92,6 @@ namespace ci_mpc
         auto space = MultibodyPhaseSpace(model);
         auto rcost = CostStack(space, nu_);
 
-        // todo: 在外部更改x_ref_后stagemodel内部会不会改变？
         rcost.addCost("state_cost", QuadraticStateCost(space, nu_, x_ref, mpc_settings_.w_x));
         rcost.addCost("control_cost", QuadraticControlCost(space, VectorXd::Zero(nu_), mpc_settings_.w_u));
 
@@ -93,7 +124,6 @@ namespace ci_mpc
             stage_models.push_back(std::move(stage));
         }
         auto term_cost = createTerminalCost(x_ref.back());
-
         problem_ = std::make_unique<TrajOptProblem>(x0, std::move(stage_models), term_cost);
     }
 
