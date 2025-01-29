@@ -26,6 +26,8 @@ int main(int, char **)
     std::vector<VectorXd> pos_ref(mpc_settings.horizon, x0.head(nq));
     std::vector<VectorXd> vel_ref(mpc_settings.horizon, x0.tail(nv));
 
+    std::vector<VectorXd> x_result;
+
     double vx = 0.5;
     vel_ref[0](0) = vx * mpc_settings.timestep;
 
@@ -40,5 +42,28 @@ int main(int, char **)
         x0 = mpc.x_sol()[1];
         std::cout << "t: " << t << std::endl;
         std::cout << "x0: " << x0.transpose() << std::endl;
+        x_result.push_back(x0);
+    }
+
+    std::ofstream outFile("trajectory_results.csv");
+    if (outFile.is_open())
+    {
+        for (size_t i = 0; i < x_result.size(); i++)
+        {
+            VectorXd q = x_result[i].head(nq);
+            for (int j = 0; j < nq; ++j)
+            {
+                outFile << q[j];
+                if (j < nq - 1)
+                    outFile << ",";
+            }
+            outFile << "\n";
+        }
+        outFile.close();
+        std::cout << "Results saved to trajectory_results.csv" << std::endl;
+    }
+    else
+    {
+        std::cerr << "Unable to open file for writing" << std::endl;
     }
 }
