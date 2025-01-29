@@ -7,11 +7,8 @@ using namespace ci_mpc;
 
 int main(int, char **)
 {
-    // std::string urdf_filename = getProjectPath() + "/robot/mini_cheetah/urdf/mini_cheetah_ground.urdf";
-    // std::string srdf_filename = getProjectPath() + "/robot/mini_cheetah/srdf/mini_cheetah.srdf";
-    std::string urdf_filename = "/home/zishang/pinocchio_idto_drake_simulator/pinocchio_idto/robot/mini_cheetah/mini_cheetah_ground.urdf";
-    std::string srdf_filename = "/home/zishang/pinocchio_idto_drake_simulator/pinocchio_idto/robot/mini_cheetah/mini_cheetah.srdf";
-
+    std::string urdf_filename = getProjectPath() + "/robot/mini_cheetah/urdf/mini_cheetah_ground.urdf";
+    std::string srdf_filename = getProjectPath() + "/robot/mini_cheetah/srdf/mini_cheetah.srdf";
     std::string config_filename = getProjectPath() + "/config/config.yaml";
 
     RobotHandler robot_handler(urdf_filename, srdf_filename);
@@ -21,23 +18,27 @@ int main(int, char **)
 
     ParamsLoader params_loader(config_filename);
 
-    VectorXd x_ref_start = VectorXd::Zero(nq + nv);
-    x_ref_start.head(nq) << 0.0, 0.0, 0.29,
-        0.0, 0.0, 0.0, 1.0,
-        0.0, -0.8, 1.6,
-        0.0, -0.8, 1.6,
-        0.0, -0.8, 1.6,
-        0.0, -0.8, 1.6;
-    VectorXd x_ref_end = VectorXd::Zero(nq + nv);
-    x_ref_end.head(nq) << 0.5, 0.0, 0.29,
-        0.0, 0.0, 0.0, 1.0,
-        0.0, -0.8, 1.6,
-        0.0, -0.8, 1.6,
-        0.0, -0.8, 1.6,
-        0.0, -0.8, 1.6;
-
-    const VectorXd &x0 = params_loader.x0;
+    VectorXd x0 = params_loader.x0;
     const MpcSettings &mpc_settings = params_loader.mpc_settings;
     const ContactParameter &contact_param = params_loader.contact_param;
     ContactImplicitMpc mpc(x0, mpc_settings, contact_param, robot_handler);
+
+    std::vector<VectorXd> pos_ref(mpc_settings.horizon, x0.head(nq));
+    std::vector<VectorXd> vel_ref(mpc_settings.horizon, x0.tail(nv));
+
+    double vx = 0.5;
+    vel_ref[0](0) = vx * mpc_settings.timestep;
+
+    for (int t = 0; t < 100; t++)
+    {
+        for (int i = 1; i < mpc_settings.horizon; i++)
+        {
+            vel_ref[i] = vel_ref[i - 1];
+            pin::integrate(robot_handler.model(), pos_ref[i - 1], vel_ref[i - 1], pos_ref[i]);
+        }
+        mpc.iterate(x0, pos_ref, vel_ref);
+        x0 = mpc.x_sol()[1];
+        std::cout << "t: " << t << std::endl;
+        std::cout << "x0: " << x0.transpose() << std::endl;
+    }
 }

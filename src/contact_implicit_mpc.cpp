@@ -37,7 +37,6 @@ namespace ci_mpc
         x_ref_.assign(mpc_settings_.horizon, x0);
 
         // create mpc problem
-        // creatMpcProblem(x0, x_ref_);
         const auto &model = robot_handler_.model();
         const auto &geom_model = robot_handler_.geom_model();
         MultibodyPhaseSpace space(model);
@@ -53,12 +52,12 @@ namespace ci_mpc
         std::cout << "Initial MPC solved" << std::endl;
         fmt::print("Results: {}\n", solver_->results_);
 
-        // // update guess for next iteration
-        // x_sol_ = solver_->results_.xs;
-        // u_sol_ = solver_->results_.us;
+        // update guess for next iteration
+        x_sol_ = solver_->results_.xs;
+        u_sol_ = solver_->results_.us;
 
-        // // set max iterations to mpc settings
-        // solver_->max_iters = mpc_settings_.max_iters;
+        // set max iterations to mpc settings
+        solver_->max_iters = mpc_settings_.max_iters;
     }
 
     void ContactImplicitMpc::createTrajOptProblem(const CompliantContactDynamics &dynamics,
@@ -75,8 +74,8 @@ namespace ci_mpc
         for (size_t i = 0; i < mpc_settings_.horizon; i++)
         {
             auto rcost = CostStack(space, nu_);
-            rcost.addCost("quad_state", QuadraticStateCost(space, nu_, x_ref[i], mpc_settings_.w_x));
-            rcost.addCost("quad_control", QuadraticControlCost(space, u0, mpc_settings_.w_u));
+            rcost.addCost("state_cost", QuadraticStateCost(space, nu_, x_ref[i], mpc_settings_.w_x));
+            rcost.addCost("control_cost", QuadraticControlCost(space, u0, mpc_settings_.w_u));
 
             StageModel stage(rcost, finite_diff_dyn);
             stage_models.push_back(std::move(stage));
@@ -133,6 +132,7 @@ namespace ci_mpc
     {
         // Update references
         updateStateReferences(pos_ref, vel_ref);
+        // std::cout << "References updated" << std::endl;
 
         // Recede previous solutions
         x_sol_.erase(x_sol_.begin());
@@ -141,11 +141,18 @@ namespace ci_mpc
 
         u_sol_.erase(u_sol_.begin());
         u_sol_.push_back(u_sol_.back());
+        // std::cout << "Previous solutions receded" << std::endl;
 
         // Update initial state
         problem_->setInitState(x0);
+        // std::cout << "Initial state updated" << std::endl;
 
         // Run solver
+        solver_->run(*problem_, x_sol_, u_sol_);
+
+        // Collect results
+        x_sol_ = solver_->results_.xs;
+        u_sol_ = solver_->results_.us;
     }
     void ContactImplicitMpc::updateStateReferences(const std::vector<VectorXd> &pos_ref,
                                                    const std::vector<VectorXd> &vel_ref)

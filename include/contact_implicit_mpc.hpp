@@ -45,8 +45,11 @@ namespace ci_mpc
                                    const std::vector<VectorXd> &vel_ref);
 
         void createTrajOptProblem(const CompliantContactDynamics &dynamics,
-                                            const std::vector<VectorXd> &x_ref,
-                                            const VectorXd &x0, const VectorXd &u0);
+                                  const std::vector<VectorXd> &x_ref,
+                                  const VectorXd &x0, const VectorXd &u0);
+
+        const std::vector<VectorXd> &x_sol() const { return x_sol_; }
+        const std::vector<VectorXd> &u_sol() const { return u_sol_; }
 
     private:
         StageModel createStage(const ConstVectorRef &x_ref);
