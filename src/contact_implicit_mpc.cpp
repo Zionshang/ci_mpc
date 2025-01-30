@@ -81,7 +81,7 @@ namespace ci_mpc
             stage_models.push_back(std::move(stage));
         }
 
-        auto term_cost = QuadraticStateCost(space, nu_, x_ref.back(), mpc_settings_.w_x_term);
+        auto term_cost = createTerminalCost(x_ref.back());
         problem_ = std::make_unique<TrajOptProblem>(x0, std::move(stage_models), term_cost);
     }
 
@@ -109,7 +109,7 @@ namespace ci_mpc
     {
         auto term_space = MultibodyPhaseSpace(robot_handler_.model());
         auto term_cost = CostStack(term_space, nu_);
-        term_cost.addCost("term_state_cost", QuadraticStateCost(term_space, nu_, x_ref, mpc_settings_.w_x));
+        term_cost.addCost("term_state_cost", QuadraticStateCost(term_space, nu_, x_ref, mpc_settings_.w_x_term));
 
         return term_cost;
     }
@@ -172,7 +172,6 @@ namespace ci_mpc
             QuadraticStateCost *qsc = cs->getComponent<QuadraticStateCost>("state_cost");
             qsc->setTarget(x_ref_[i]);
         }
-
         CostStack *cs = dynamic_cast<CostStack *>(&*problem_->term_cost_);
         QuadraticStateCost *qsc = cs->getComponent<QuadraticStateCost>("term_state_cost");
         qsc->setTarget(x_ref_.back());

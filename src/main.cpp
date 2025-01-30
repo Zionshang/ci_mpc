@@ -2,6 +2,7 @@
 #include "contact_implicit_mpc.hpp"
 #include "utils/project_path.h"
 #include "utils/load_config_yaml.h"
+#include "utils/logger.hpp"
 
 using namespace ci_mpc;
 
@@ -51,25 +52,5 @@ int main(int, char **)
         x_result = mpc.x_sol();
     }
 
-    std::ofstream outFile("trajectory_results.csv");
-    if (outFile.is_open())
-    {
-        for (size_t i = 0; i < x_result.size(); i++)
-        {
-            VectorXd q = x_result[i].head(nq);
-            for (int j = 0; j < nq; ++j)
-            {
-                outFile << q[j];
-                if (j < nq - 1)
-                    outFile << ",";
-            }
-            outFile << "\n";
-        }
-        outFile.close();
-        std::cout << "Results saved to trajectory_results.csv" << std::endl;
-    }
-    else
-    {
-        std::cerr << "Unable to open file for writing" << std::endl;
-    }
+    saveVectorsToCsv("trajectory_results2.csv", x_result);
 }
