@@ -130,6 +130,8 @@ namespace ci_mpc
                                      const std::vector<VectorXd> &pos_ref,
                                      const std::vector<VectorXd> &vel_ref)
     {
+        auto start = std::chrono::high_resolution_clock::now();
+
         // Update references
         updateStateReferences(pos_ref, vel_ref);
         // std::cout << "References updated" << std::endl;
@@ -153,6 +155,10 @@ namespace ci_mpc
         // Collect results
         x_sol_ = solver_->results_.xs;
         u_sol_ = solver_->results_.us;
+
+        auto end = std::chrono::high_resolution_clock::now();
+        auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        std::cout << "iterate runtime: " << elapsed_ms << " ms" << std::endl;
     }
     void ContactImplicitMpc::updateStateReferences(const std::vector<VectorXd> &pos_ref,
                                                    const std::vector<VectorXd> &vel_ref)
@@ -166,6 +172,10 @@ namespace ci_mpc
             QuadraticStateCost *qsc = cs->getComponent<QuadraticStateCost>("state_cost");
             qsc->setTarget(x_ref_[i]);
         }
+
+        CostStack *cs = dynamic_cast<CostStack *>(&*problem_->term_cost_);
+        QuadraticStateCost *qsc = cs->getComponent<QuadraticStateCost>("term_state_cost");
+        qsc->setTarget(x_ref_.back());
     }
 
 } // namespace mpc
