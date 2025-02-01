@@ -16,8 +16,8 @@ v_init : [0, 0, 0,
           0, 0, 0]
 
 # Cost Weights
-w_q : [10, 10, 20,
-       1, 1, 1,
+w_q : [50, 50, 50,
+       10, 1, 1,
        0, 0, 0,
        0, 0, 0,
        0, 0, 0,
@@ -30,13 +30,13 @@ w_v : [1, 1, 1,
        0.1, 0.1, 0.1,
        0.1, 0.1, 0.1]
 
-w_u : [0.01, 0.01, 0.01,
-       0.01, 0.01, 0.01,
-       0.01, 0.01, 0.01,
-       0.01, 0.01, 0.01]  # only for the actuated joints
+w_u : [1e-9, 1e-9, 1e-9,
+       1e-9, 1e-9, 1e-9,
+       1e-9, 1e-9, 1e-9,
+       1e-9, 1e-9, 1e-9]  # only for the actuated joints
 
-w_q_term : [10, 10, 10,
-            10, 10, 10,   
+w_q_term : [50, 50, 50,
+            20, 10, 10,   
             1, 1, 1,
             1, 1, 1,
             1, 1, 1,
@@ -65,13 +65,13 @@ friction_coefficient : 1.0  # Coefficient of friction.
 stiction_velocity: 0.5     # Regularization velocity, in m/s.
 
 # MPC settings
-timestep : 0.05
+timestep : 0.005
 horizon : 20
 
 # Solver-related quantities
 TOL : 1e-4
 mu_init : 1e-8
 max_iters : 1
-num_threads : 4
+num_threads : 8
 first_iters : 100
 finite_diff_step: 1e-6

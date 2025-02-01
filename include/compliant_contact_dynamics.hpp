@@ -39,9 +39,10 @@ namespace ci_mpc
 
         void CalcContactForceContribution(const pin::Model &rmodel, const pin::Data &rdata,
                                           const pin::GeometryModel &geom_model, pin::GeometryData &geom_data,
-                                          pin::container::aligned_vector<pin::Force> &f_ext) const;
+                                          pin::container::aligned_vector<pin::Force> &f_ext,
+                                          CompliantContactData &contact_data) const;
 
-        std::shared_ptr<ODEData> createData() const;
+        std::shared_ptr<ODEData> createData() const override;
 
         MultibodyPhaseSpace space_;
         MatrixXd actuation_matrix_;
@@ -59,6 +60,7 @@ namespace ci_mpc
         pin::GeometryData geom_data_;
         ContactParameter contact_param_; // todo: 没有发生变化的数据是否需要存储？
         pin::container::aligned_vector<pin::Force> f_ext_;
+        std::vector<Vector3d> contact_forces_;
     };
 
 } // namespace ci_mpc

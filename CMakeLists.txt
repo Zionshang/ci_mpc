@@ -7,6 +7,13 @@ find_package(yaml-cpp REQUIRED)
 
 include_directories(include)
 
+# webots
+set(WEBOTS_HOME "/usr/local/webots")
+link_directories(${WEBOTS_HOME}/lib/controller)
+set(WEBOTSLIBRARIES m ${CMAKE_SHARED_LIBRARY_PREFIX}Controller${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CppController${CMAKE_SHARED_LIBRARY_SUFFIX})
+include_directories(${WEBOTS_HOME}/include/controller/c ${WEBOTS_HOME}/include/controller/cpp)
+
+
 file(GLOB SOURCE_FILES 
     "src/*.cpp"
 )
@@ -15,6 +22,7 @@ add_executable(aligator_mpc ${SOURCE_FILES})
 target_link_libraries(aligator_mpc pinocchio::pinocchio)
 target_link_libraries(aligator_mpc aligator::aligator)
 target_link_libraries(aligator_mpc yaml-cpp::yaml-cpp)
+target_link_libraries(aligator_mpc ${WEBOTSLIBRARIES})
 
 # Resolve for the package path at compile time.
 configure_file (

@@ -30,12 +30,12 @@ namespace ci_mpc
         const int nq = model.nq;
         const int nv = model.nv;
         const auto &q = x.head(nq);
-        const auto &v = x.segment(nq, nv);
+        const auto &v = x.tail(nv);
 
         pin::forwardKinematics(model, d.pin_data_, q, v);
         pin::computeDistances(model, d.pin_data_, geom_model_, d.geom_data_, q);
-        CalcContactForceContribution(model, d.pin_data_, geom_model_, d.geom_data_, d.f_ext_);
-
+        // CalcContactForceContribution(model, d.pin_data_, geom_model_, d.geom_data_, d.f_ext_);
+        CalcContactForceContribution(model, d.pin_data_, geom_model_, d.geom_data_, d.f_ext_, d);
         data.xdot_.head(nv) = v;
         data.xdot_.segment(nv, nv) = pin::aba(model, d.pin_data_, q, v, d.tau_, d.f_ext_);
     }
@@ -45,12 +45,12 @@ namespace ci_mpc
     {
     }
 
-    void CompliantContactDynamics::CalcContactForceContribution(const pin::Model &rmodel, const pin::Data &rdata,
+    void CompliantContactDynamics::CalcContactForceContribution(const pin::Model &model, const pin::Data &data,
                                                                 const pin::GeometryModel &geom_model, pin::GeometryData &geom_data,
-                                                                pin::container::aligned_vector<pin::Force> &f_ext) const
+                                                                pin::container::aligned_vector<pin::Force> &f_ext,
+                                                                CompliantContactData &contact_data) const
     {
         using std::abs, std::exp, std::log, std::max, std::pow, std::sqrt;
-
         // TODO: 是否需要增加body的碰撞
         // Compliant contact parameters
         const double &k = contact_param_.contact_stiffness;
@@ -122,8 +122,8 @@ namespace ci_mpc
                 X_BC.translation(pos_contact - pos_geomB);
 
                 // Relative velocity at contact point
-                motion_geomAc = X_AC.actInv(pin::getFrameVelocity(rmodel, rdata, frameA_id, pinocchio::LOCAL_WORLD_ALIGNED));
-                motion_geomBc = X_BC.actInv(pin::getFrameVelocity(rmodel, rdata, frameB_id, pinocchio::LOCAL_WORLD_ALIGNED));
+                motion_geomAc = X_AC.actInv(pin::getFrameVelocity(model, data, frameA_id, pinocchio::LOCAL_WORLD_ALIGNED));
+                motion_geomBc = X_BC.actInv(pin::getFrameVelocity(model, data, frameB_id, pinocchio::LOCAL_WORLD_ALIGNED));
                 vel_contact = motion_geomAc.linear() - motion_geomBc.linear();
 
                 // Split velocity into normal and tangential components.
@@ -163,14 +163,17 @@ namespace ci_mpc
                 // Transformation of joint local frame relative to contact frame.
                 // Contact frame is fixed at contact point and alienged with world frame.
                 X_WC.translation(pos_contact);
-                const pin::SE3 &X_WJa = rdata.oMi[jointA_id];
-                const pin::SE3 &X_WJb = rdata.oMi[jointB_id];
+                const pin::SE3 &X_WJa = data.oMi[jointA_id];
+                const pin::SE3 &X_WJb = data.oMi[jointB_id];
                 X_JaC = X_WJa.inverse() * X_WC;
                 X_JbC = X_WJb.inverse() * X_WC;
 
                 // Transform contact force from contact frame to joint local frame
                 f_ext[jointA_id] = X_JaC.act(force6d_contact);
                 f_ext[jointB_id] = X_JbC.act(-force6d_contact);
+
+                // used for debug
+                contact_data.contact_forces_[pair_id] = force_contact;
             }
             else
             {
@@ -196,6 +199,7 @@ namespace ci_mpc
         pin_data_ = pin::Data(model);
         geom_data_ = pin::GeometryData(geom_model_);
         f_ext_.assign(model.njoints, pin::Force::Zero());
+        contact_forces_.assign(4, Vector3d::Zero());
     }
 
 } // namespace ci_mpc

@@ -22,8 +22,13 @@ namespace ci_mpc
         solver_ = std::make_unique<SolverProxDDP>(mpc_settings_.TOL,
                                                   mpc_settings_.mu_init,
                                                   mpc_settings_.first_iters,
-                                                  aligator::VerboseLevel::QUIET);
+                                                  aligator::VerboseLevel::VERBOSE);
         solver_->rollout_type_ = aligator::RolloutType::LINEAR;
+        // solver_->sa_strategy_ = aligator::StepAcceptanceStrategy::FILTER;
+        // solver_->filter_.beta_ = 1e-5;
+        // solver_->force_initial_condition_ = true;
+        // solver_->reg_min = 1e-6;
+
         if (mpc_settings_.num_threads > 1)
         {
             solver_->linear_solver_choice = aligator::LQSolverChoice::PARALLEL;
@@ -31,7 +36,6 @@ namespace ci_mpc
         }
         else
             solver_->linear_solver_choice = aligator::LQSolverChoice::SERIAL;
-        solver_->force_initial_condition_ = true;
 
         // setup initial reference trajectory
         x_ref_.assign(mpc_settings_.horizon, x0);
@@ -42,7 +46,8 @@ namespace ci_mpc
         MultibodyPhaseSpace space(model);
         CompliantContactDynamics dynamics(space, actuation_matrix_, geom_model, contact_param_);
         VectorXd u0 = VectorXd::Zero(nu_);
-        createTrajOptProblem(dynamics, x_ref_, x0, u0);
+        // createTrajOptProblem(dynamics, x_ref_, x0, u0);
+        creatMpcProblem(x0, x_ref_);
 
         // solve initial problem
         x_sol_.assign(mpc_settings_.horizon + 1, x0);
@@ -55,6 +60,11 @@ namespace ci_mpc
         // update guess for next iteration
         x_sol_ = solver_->results_.xs;
         u_sol_ = solver_->results_.us;
+
+        for (size_t i = 0; i < x_sol_.size(); i++)
+        {
+            std::cout << "x_sol[" << i << "]: " << x_sol_[i].transpose() << std::endl;
+        }
 
         // set max iterations to mpc settings
         solver_->max_iters = mpc_settings_.max_iters;
@@ -110,7 +120,6 @@ namespace ci_mpc
         auto term_space = MultibodyPhaseSpace(robot_handler_.model());
         auto term_cost = CostStack(term_space, nu_);
         term_cost.addCost("term_state_cost", QuadraticStateCost(term_space, nu_, x_ref, mpc_settings_.w_x_term));
-
         return term_cost;
     }
 
@@ -156,6 +165,20 @@ namespace ci_mpc
         x_sol_ = solver_->results_.xs;
         u_sol_ = solver_->results_.us;
 
+        for (int i = 0; i < 3; i++)
+        {
+            std::cout << "x[" << i << "]: " << x_sol_[i].head(nq_).transpose() << std::endl;
+        }
+        for (size_t i = 0; i < 3; i++)
+        {
+            CostStack *cs = dynamic_cast<CostStack *>(&*problem_->stages_[i]->cost_);
+            QuadraticStateCost *qsc = cs->getComponent<QuadraticStateCost>("state_cost");
+            std::cout << "x_ref[" << i << "]: " << qsc->getTarget().transpose() << std::endl;
+        }
+        for (int i = 0; i < 2; i++)
+        {
+            std::cout << "u[" << i << "]: " << u_sol_[i].transpose() << std::endl;
+        }
         auto end = std::chrono::high_resolution_clock::now();
         auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         std::cout << "iterate runtime: " << elapsed_ms << " ms" << std::endl;
@@ -175,6 +198,7 @@ namespace ci_mpc
         CostStack *cs = dynamic_cast<CostStack *>(&*problem_->term_cost_);
         QuadraticStateCost *qsc = cs->getComponent<QuadraticStateCost>("term_state_cost");
         qsc->setTarget(x_ref_.back());
+        std::cout << "x_ref_term: " << x_ref_.back().transpose() << std::endl;
     }
 
 } // namespace mpc
