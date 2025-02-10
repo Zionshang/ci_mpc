@@ -4,7 +4,7 @@ import pandas as pd
 import time
 from pinocchio.visualize import MeshcatVisualizer
 
-csv_path = "/home/zishang/ci_mpc/build/trajectory_mpc_result.csv"
+csv_path = "/home/zishang/ci_mpc/build/trajectory_initial.csv"
 
 # 读取URDF文件和创建机器人模型
 urdf_path = "/home/zishang/pinocchio_idto_drake_simulator/pinocchio_idto/robot/mini_cheetah/mini_cheetah_ground.urdf"

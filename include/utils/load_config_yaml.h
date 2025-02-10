@@ -31,6 +31,8 @@ namespace ci_mpc
             std::vector<double> w_u_vec = config["w_u"].as<std::vector<double>>();
             std::vector<double> w_q_term_vec = config["w_q_term"].as<std::vector<double>>();
             std::vector<double> w_v_term_vec = config["w_v_term"].as<std::vector<double>>();
+            std::vector<double> kp_vec = config["kp"].as<std::vector<double>>();
+            std::vector<double> kd_vec = config["kd"].as<std::vector<double>>();
 
             double contact_stiffness = config["contact_stiffness"].as<double>();
             double dissipation_velocity = config["dissipation_velocity"].as<double>();
@@ -72,7 +74,7 @@ namespace ci_mpc
             mpc_settings.w_x_term = w_x_term_diag.asDiagonal();
             mpc_settings.w_u = w_u_diag.asDiagonal();
             mpc_settings.finite_diff_step = finite_diff_step;
-            
+
             // load contact parameters
             contact_param.contact_stiffness = contact_stiffness;
             contact_param.dissipation_velocity = dissipation_velocity;
@@ -83,11 +85,21 @@ namespace ci_mpc
             // load initial state
             x0.setZero(q_init.size() + v_init.size());
             x0 << q_init, v_init;
+            mpc_frequency = config["mpc_frequency"].as<double>();
+
+            // load pd gains
+            VectorXd kp_diag = Eigen::Map<VectorXd>(kp_vec.data(), kp_vec.size());
+            VectorXd kd_diag = Eigen::Map<VectorXd>(kd_vec.data(), kd_vec.size());
+            Kp = kp_diag.asDiagonal();
+            Kd = kd_diag.asDiagonal();
         }
 
         MpcSettings mpc_settings;
         ContactParameter contact_param;
         VectorXd x0;
+        double mpc_frequency;
+        MatrixXd Kp;
+        MatrixXd Kd;
     };
 
 } // namespace ci_mpc

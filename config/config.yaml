@@ -1,12 +1,19 @@
 ### Defines a locomotion problem for the mini cheetah qudruped
 
 # Initial state
-q_init : [ 0.0, 0.0, 0.29,        # base orientation
-           0.0, 0.0, 0.0, 1.0,    # base position
-           0.0,-0.8, 1.6,         # fl
-           0.0,-0.8, 1.6,         # fr
-           0.0,-0.8, 1.6,         # hl
-           0.0,-0.8, 1.6]         # hr
+# q_init : [ 0.0, 0.0, 0.29,        # base orientation
+#            0.0, 0.0, 0.0, 1.0,    # base position
+#            0.0,-0.8, 1.6,         # fl
+#            0.0,-0.8, 1.6,         # fr
+#            0.0,-0.8, 1.6,         # hl
+#            0.0,-0.8, 1.6]         # hr
+
+q_init : [ 0.0, 0.0, 0.16,
+        0.0, 0.0, 0.0, 1.0,
+        0.0, -1.3, 2.4,
+        0.0, -1.3, 2.4,
+        0.0, -1.3, 2.4,
+        0.0, -1.3, 2.4]
 
 v_init : [0, 0, 0,
           0, 0, 0, 
@@ -16,8 +23,8 @@ v_init : [0, 0, 0,
           0, 0, 0]
 
 # Cost Weights
-w_q : [50, 50, 50,
-       10, 1, 1,
+w_q : [10, 10, 10,
+       1, 1, 1,
        0, 0, 0,
        0, 0, 0,
        0, 0, 0,
@@ -35,8 +42,8 @@ w_u : [1e-9, 1e-9, 1e-9,
        1e-9, 1e-9, 1e-9,
        1e-9, 1e-9, 1e-9]  # only for the actuated joints
 
-w_q_term : [50, 50, 50,
-            20, 10, 10,   
+w_q_term : [10, 10, 10,
+            10, 10, 10,   
             1, 1, 1,
             1, 1, 1,
             1, 1, 1,
@@ -48,6 +55,24 @@ w_v_term : [1, 1, 1,
             0.1, 0.1, 0.1,
             0.1, 0.1, 0.1,
             0.1, 0.1, 0.1]
+
+kp : [50, 50, 50,
+      50, 50, 50,
+      50, 50, 50,
+      50, 50, 50] # only for actuated joint
+kd : [2, 2, 2,
+      2, 2, 2,
+      2, 2, 2,
+      2, 2, 2] # only for actuated joint
+
+# kp : [0, 0, 0,
+#       0, 0, 0,
+#       0, 0, 0,
+#       0, 0, 0] # only for actuated joint
+# kd : [0, 0, 0,
+#       0, 0, 0,
+#       0, 0, 0,
+#       0, 0, 0] # only for actuated joint
 
 # Contact model parameters. 
 contact_stiffness : 2000    # normal force stiffness, in N/m
@@ -65,8 +90,9 @@ friction_coefficient : 1.0  # Coefficient of friction.
 stiction_velocity: 0.5     # Regularization velocity, in m/s.
 
 # MPC settings
-timestep : 0.005
-horizon : 20
+timestep : 0.001
+horizon : 500
+mpc_frequency : 100
 
 # Solver-related quantities
 TOL : 1e-4

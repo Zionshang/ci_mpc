@@ -11,10 +11,10 @@ WebotsInterface::WebotsInterface()
 
     last_q_.resize(joint_sensor_name_.size());
     // last_q_.setZero();
-    last_q_ << 0.0, -0.8, 1.6,
-        0.0, -0.8, 1.6,
-        0.0, -0.8, 1.6,
-        0.0, -0.8, 1.6;
+    last_q_ << 0.0, -1.3, 2.4,
+        0.0, -1.3, 2.4,
+        0.0, -1.3, 2.4,
+        0.0, -1.3, 2.4;
 }
 
 WebotsInterface::~WebotsInterface()
